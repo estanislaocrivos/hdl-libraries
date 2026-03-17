@@ -1,0 +1,34 @@
+CAPI=2:
+name: local:lib:fifo:1.0.0
+description: Generic synchronous FIFO, parametrizable width and depth
+
+filesets:
+  rtl:
+    files:
+      - rtl/fifo.sv
+    file_type: systemVerilogSource
+
+  tb:
+    files:
+      - tb/tb_fifo.sv
+    file_type: systemVerilogSource
+    depend:
+      - local:lib:fifo:1.0.0
+
+targets:
+  default: &default
+    filesets:
+      - rtl
+    toplevel: fifo
+
+  sim:
+    <<: *default
+    description: Simulate with Icarus Verilog
+    default_tool: icarus
+    filesets_append:
+      - tb
+    toplevel: tb_fifo
+    tools:
+      icarus:
+        iverilog_options:
+          - -g2012

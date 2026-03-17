@@ -1,0 +1,13 @@
+# FuseSoC build outputs
+build/
+*.bak
+
+# Simulation
+*.vcd
+*.ghw
+*.lxt
+
+# Editor
+.vscode/
+*.swp
+*~

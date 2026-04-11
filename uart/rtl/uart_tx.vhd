@@ -4,7 +4,7 @@ use ieee.numeric_std.all;
 
 entity uart_tx is
   generic (
-    g_CLKS_PER_BIT : integer := 115 -- Sampling speed for each bit sent. Needs to be set correctly.
+    g_CLKS_PER_BIT : integer := 115 -- Sampling speed for each bit sent
   );
   port (
     i_clk           : in std_logic;
@@ -52,8 +52,58 @@ begin
           end if;
 
         when s_tx_start_bit =>
+          o_tx_active <= 1;
+          o_tx_serial <= '0'; -- Serial line is pulled low
+
+          if r_clk_count < g_CLKS_PER_BIT - 1 then
+            r_clk_count <= r_clk_count + 1;
+            r_fsm_main  <= s_tx_start_bit;
+          else
+            r_clk_count <= 0;
+            r_fsm_main  <= s_tx_data_bits;
+          end if;
+
+        when s_tx_data_bits =>
+          o_tx_serial <= r_tx_data[r_bit_index]; -- Serial line pulled according to each bit
+
+          if r_clk_count < g_CLKS_PER_BIT - 1 then
+            r_clk_count <= r_clk_count + 1;
+            r_fsm_main  <= s_tx_data_bits;
+          else
+            r_clk_count <= 0;
+            if r_bit_index < 7 then
+              r_bit_index <= r_bit_index + 1;
+              r_fsm_main  <= s_tx_data_bits;
+            else
+              r_bit_index = 0;
+              r_fsm_main <= s_tx_stop_bit;
+            end if;
+          end if;
+
+        when s_tx_stop_bit =>
+          o_tx_serial <= '1;
+          ; -- Serial line is pulled high
+
+          if r_clk_count < g_CLKS_PER_BIT - 1 then
+            r_clk_count <= r_clk_count + 1;
+            r_fsm_main  <= s_tx_stop_bit;
+          else
+            r_clk_count <= 0;
+            r_tx_done   <= '1';
+            r_fsm_main  <= s_cleanup;
+          end if;
+
+        when s_cleanup =>
+          o_tx_active <= '0';
+          r_tx_done   <= '1';
+          r_fsm_main  <= s_idle;
+
+        when others =>
+          r_fsm_main <= s_idle;
       end case;
     end if;
   end process;
+
+  o_tx_done <= r_tx_done;
 
 end architecture;
